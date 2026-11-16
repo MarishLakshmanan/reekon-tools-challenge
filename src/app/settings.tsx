@@ -9,12 +9,14 @@ import { ThemedText } from '@/components/themed-text';
 import { layout } from '@/constants/layout';
 import { Spacing } from '@/constants/theme';
 import { api } from '@/lib/api';
+import { clearSession, useSession } from '@/lib/session';
 import { updateSettings, useSettings } from '@/lib/settings';
 
 const UNITS = Object.keys(UNIT_LABELS) as Unit[];
 
 export default function SettingsScreen() {
   const settings = useSettings();
+  const { user } = useSession();
   const [resetStatus, setResetStatus] = useState<string>();
 
   async function reset() {
@@ -27,8 +29,21 @@ export default function SettingsScreen() {
     }
   }
 
+  async function signOut() {
+    // Revoke on the server, but sign out locally even if the request fails.
+    await api.logout().catch(() => {});
+    await clearSession();
+  }
+
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={layout.content}>
+      <Card>
+        <ThemedText type="smallBold">Signed in as {user?.name}</ThemedText>
+        <View style={styles.action}>
+          <Button title="Sign out" onPress={signOut} />
+        </View>
+      </Card>
+
       <Card>
         <ThemedText type="smallBold">Units</ThemedText>
         <Chips

@@ -1,6 +1,7 @@
+import { dirname, join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-import { seed } from './seed';
+import { seedProjects, seedUsers, writeCredentials } from './seed';
 
 export type Db = DatabaseSync;
 
@@ -8,7 +9,13 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    token TEXT NOT NULL UNIQUE
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL
   );
   CREATE TABLE IF NOT EXISTS projects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,7 +44,8 @@ const SCHEMA = `
   CREATE INDEX IF NOT EXISTS measurements_created_at ON measurements(created_at);
 `;
 
-const TABLES = ['measurements', 'measurement_groups', 'project_members', 'projects', 'users'];
+// Reset only touches project data, so users, passwords and sessions survive it.
+const PROJECT_TABLES = ['measurements', 'measurement_groups', 'project_members', 'projects'];
 
 export function openDb(path: string): Db {
   const db = new DatabaseSync(path);
@@ -45,17 +53,20 @@ export function openDb(path: string): Db {
   db.exec(SCHEMA);
   const { count } = db.prepare('SELECT COUNT(*) AS count FROM users').get() as { count: number };
   if (count === 0) {
-    seed(db);
+    const credentials = seedUsers(db);
+    if (path !== ':memory:') writeCredentials(join(dirname(path), 'credentials.md'), credentials);
+    seedProjects(db);
   }
   return db;
 }
 
 export function resetDb(db: Db) {
+  const tables = PROJECT_TABLES.map((t) => `'${t}'`).join(', ');
   db.exec('BEGIN');
-  for (const table of TABLES) {
+  for (const table of PROJECT_TABLES) {
     db.exec(`DELETE FROM ${table}`);
   }
-  db.exec(`DELETE FROM sqlite_sequence`);
-  seed(db);
+  db.exec(`DELETE FROM sqlite_sequence WHERE name IN (${tables})`);
+  seedProjects(db);
   db.exec('COMMIT');
 }

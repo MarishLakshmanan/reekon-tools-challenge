@@ -1,8 +1,9 @@
-import type { FeedItem, Group, Measurement, NewMeasurement, Project } from '@kerf/shared';
+import type { FeedItem, Group, Measurement, NewMeasurement, Project, User } from '@kerf/shared';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-const TOKEN = 'alex-7f3c2a91';
+import { clearSession, getToken } from '@/lib/session';
+
 const API_PORT = 4000;
 
 // The API runs on the same machine as the Expo dev server: the page's host on web, and the
@@ -26,14 +27,17 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = getToken();
   const res = await fetch(apiUrl() + path, {
     ...init,
     headers: {
-      authorization: `Bearer ${TOKEN}`,
+      ...(token && { authorization: `Bearer ${token}` }),
       'content-type': 'application/json',
       ...init.headers,
     },
   });
+  // A rejected session means we're signed out; the route guard shows the sign-in screen.
+  if (res.status === 401 && token) clearSession();
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new ApiError(res.status, body.error ?? res.statusText);
@@ -42,6 +46,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  login: (username: string, password: string) =>
+    request<{ token: string; user: User }>('/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    }),
+  logout: () => request<{ ok: true }>('/logout', { method: 'POST' }),
   projects: () => request<Project[]>('/projects'),
   measurements: (projectId: number) => request<Group[]>(`/projects/${projectId}/measurements`),
   addMeasurement: (groupId: number, measurement: NewMeasurement) =>

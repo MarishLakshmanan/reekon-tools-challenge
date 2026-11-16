@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { requireUser } from './auth';
+import { loginRouter, logout, requireUser } from './auth';
 import { type Db, resetDb } from './db';
 import { feedRouter } from './routes/feed';
 import { measurementsRouter } from './routes/measurements';
@@ -29,7 +29,10 @@ export function createApp(db: Db) {
     res.json({ ok: true });
   });
 
+  app.use(loginRouter(db));
   app.use(requireUser(db));
+
+  app.post('/logout', logout(db));
 
   app.get('/me', (req, res) => {
     res.json(db.prepare('SELECT id, name FROM users WHERE id = ?').get(req.userId));

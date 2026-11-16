@@ -1,10 +1,16 @@
+import { randomBytes } from 'node:crypto';
+import { writeFileSync } from 'node:fs';
 import type { DatabaseSync } from 'node:sqlite';
 
+import { hashPassword } from './password';
+
 export const USERS = [
-  { name: 'Alex', token: 'alex-7f3c2a91' },
-  { name: 'Sam', token: 'sam-4b8e10d6' },
-  { name: 'Priya', token: 'priya-2d9e5b07' },
+  { name: 'Alex', username: 'alex' },
+  { name: 'Sam', username: 'sam' },
+  { name: 'Priya', username: 'priya' },
 ];
+
+export type Credential = { name: string; username: string; password: string };
 
 type SeedGroup = { name: string; readings: [string, number][] };
 type SeedProject = { name: string; owner: number; members?: number[]; groups: SeedGroup[] };
@@ -128,8 +134,33 @@ const PROJECTS: SeedProject[] = [
 const DEVICES = ['TP-3F2A', 'TP-91C4'];
 const DAY = 24 * 60 * 60 * 1000;
 
-export function seed(db: DatabaseSync) {
-  const insertUser = db.prepare('INSERT INTO users (name, token) VALUES (?, ?)');
+export function seedUsers(db: DatabaseSync): Credential[] {
+  const insertUser = db.prepare(
+    'INSERT INTO users (name, username, password_hash) VALUES (?, ?, ?)',
+  );
+  return USERS.map((user) => {
+    const password = randomBytes(9).toString('base64url');
+    insertUser.run(user.name, user.username, hashPassword(password));
+    return { ...user, password };
+  });
+}
+
+export function writeCredentials(path: string, credentials: Credential[]) {
+  const rows = credentials.map((c) => `| ${c.name} | \`${c.username}\` | \`${c.password}\` |`);
+  const lines = [
+    '# Seeded users',
+    '',
+    'Generated when the database was created. Delete `kerf.db` to get new ones.',
+    '',
+    '| Name | Username | Password |',
+    '| ---- | -------- | -------- |',
+    ...rows,
+    '',
+  ];
+  writeFileSync(path, lines.join('\n'));
+}
+
+export function seedProjects(db: DatabaseSync) {
   const insertProject = db.prepare('INSERT INTO projects (name, owner_id) VALUES (?, ?)');
   const insertMember = db.prepare(
     'INSERT INTO project_members (project_id, user_id) VALUES (?, ?)',
@@ -139,10 +170,6 @@ export function seed(db: DatabaseSync) {
     `INSERT INTO measurements (group_id, value, label, device_id, created_at, created_by)
      VALUES (?, ?, ?, ?, ?, ?)`,
   );
-
-  for (const user of USERS) {
-    insertUser.run(user.name, user.token);
-  }
 
   let createdAt = Date.now() - 14 * DAY;
   for (const project of PROJECTS) {
