@@ -1,4 +1,4 @@
-import type { FeedItem, Group, Measurement, NewMeasurement, Project, User } from '@kerf/shared';
+import type { Group, Measurement, NewMeasurement, Project, User } from '@kerf/shared';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
@@ -15,6 +15,11 @@ function apiUrl() {
       ? globalThis.location?.hostname
       : Constants.expoConfig?.hostUri?.split(':')[0];
   return `http://${host || 'localhost'}:${API_PORT}`;
+}
+
+/** The WebSocket endpoint, on the same host as the HTTP API. */
+export function wsUrl() {
+  return `${apiUrl().replace(/^http/, 'ws')}/ws`;
 }
 
 export class ApiError extends Error {
@@ -46,10 +51,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  login: (username: string, password: string) =>
+  login: (username: string, password: string, deviceId: string) =>
     request<{ token: string; user: User }>('/login', {
       method: 'POST',
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, deviceId }),
     }),
   logout: () => request<{ ok: true }>('/logout', { method: 'POST' }),
   projects: () => request<Project[]>('/projects'),
@@ -59,6 +64,5 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(measurement),
     }),
-  feed: () => request<FeedItem[]>('/feed'),
   reset: () => request<{ ok: true }>('/dev/reset', { method: 'POST' }),
 };

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { createApp } from './app';
 import { openDb } from './db';
+import { createRealtime } from './realtime';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DB_PATH =
@@ -12,9 +13,12 @@ const DB_PATH =
 mkdirSync(dirname(DB_PATH), { recursive: true });
 const db = openDb(DB_PATH);
 
-const server = createApp(db).listen(PORT, () => {
+const realtime = createRealtime(db);
+const server = createApp(db, realtime).listen(PORT, () => {
   console.log(`Kerf API listening on http://localhost:${PORT}`);
 });
+
+realtime.attach(server);
 
 server.on('error', (err: NodeJS.ErrnoException) => {
   if (err.code === 'EADDRINUSE') {

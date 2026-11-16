@@ -3,10 +3,11 @@ import express from 'express';
 import { loginRouter, logout, requireUser } from './auth';
 import { type Db, resetDb } from './db';
 import { feedRouter } from './routes/feed';
+import type { Realtime } from './realtime';
 import { measurementsRouter } from './routes/measurements';
 import { projectsRouter } from './routes/projects';
 
-export function createApp(db: Db) {
+export function createApp(db: Db, realtime: Realtime) {
   const app = express();
   app.use(express.json());
 
@@ -32,7 +33,7 @@ export function createApp(db: Db) {
   app.use(loginRouter(db));
   app.use(requireUser(db));
 
-  app.post('/logout', logout(db));
+  app.post('/logout', logout(db, realtime));
 
   app.get('/me', (req, res) => {
     res.json(db.prepare('SELECT id, name FROM users WHERE id = ?').get(req.userId));
@@ -40,11 +41,12 @@ export function createApp(db: Db) {
 
   app.post('/dev/reset', (_req, res) => {
     resetDb(db);
+    realtime.broadcastReset();
     res.json({ ok: true });
   });
 
   app.use(projectsRouter(db));
-  app.use(measurementsRouter(db));
+  app.use(measurementsRouter(db, realtime));
   app.use(feedRouter(db));
 
   return app;

@@ -15,7 +15,9 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS sessions (
     token TEXT PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at INTEGER NOT NULL
+    created_at INTEGER NOT NULL,
+    device_id TEXT,
+    last_seen INTEGER
   );
   CREATE TABLE IF NOT EXISTS projects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,10 +49,24 @@ const SCHEMA = `
 // Reset only touches project data, so users, passwords and sessions survive it.
 const PROJECT_TABLES = ['measurements', 'measurement_groups', 'project_members', 'projects'];
 
+/**
+ * Adds the `device_id` and `last_seen` columns to a `sessions` table created before they existed,
+ * so an older kerf.db keeps its users and passwords. `CREATE TABLE IF NOT EXISTS` doesn't alter a
+ * table that is already there.
+ */
+function addSessionColumns(db: Db) {
+  const existing = (db.prepare('PRAGMA table_info(sessions)').all() as { name: string }[]).map(
+    (c) => c.name,
+  );
+  if (!existing.includes('device_id')) db.exec('ALTER TABLE sessions ADD COLUMN device_id TEXT');
+  if (!existing.includes('last_seen')) db.exec('ALTER TABLE sessions ADD COLUMN last_seen INTEGER');
+}
+
 export function openDb(path: string): Db {
   const db = new DatabaseSync(path);
   db.exec('PRAGMA foreign_keys = ON');
   db.exec(SCHEMA);
+  addSessionColumns(db);
   const { count } = db.prepare('SELECT COUNT(*) AS count FROM users').get() as { count: number };
   if (count === 0) {
     const credentials = seedUsers(db);

@@ -32,7 +32,7 @@ Every error has the same shape: `{ "error": "message" }`.
 
 **GET `/health`** returns `{ ok: true }`.
 
-**POST `/login`** takes `{ username: string, password: string }` and returns `{ token: string, user: { id, name } }`. It returns `400` if either is missing and `401` if they don't match. Each login creates a separate session, so one user can be signed in on several devices.
+**POST `/login`** takes `{ username: string, password: string, deviceId?: string }` and returns `{ token: string, user: { id, name } }`. It returns `400` if either is missing and `401` if they don't match. Each login creates a separate session, so one user can be signed in on several devices. `deviceId` is stored with the session.
 
 **POST `/logout`** deletes the session and returns `{ ok: true }`. Other sessions stay signed in.
 
@@ -63,6 +63,23 @@ It returns the new `Measurement` with status `201`. It returns `400` if `value` 
 **GET `/feed`** returns a list of measurements, newest first. Each one also has `projectId`, `projectName` and `groupName`.
 
 **POST `/dev/reset`** restores the seed projects and measurements, keeps users and sessions, and returns `{ ok: true }`.
+
+## WebSocket
+
+`ws://localhost:4000/ws` carries live measurements and who's online. Messages are JSON with a `type`.
+The first message must be `auth`, within 5 seconds, or the server closes the socket. A bad token
+closes it with code `4401`.
+
+| Direction | Message | What it does |
+| --------- | ------- | ------------ |
+| Client → server | `{ type: 'auth', token }` | Signs in with a session token |
+| Client → server | `{ type: 'resume', after }` | Subscribes to live measurements. `after` is the highest measurement `id` the client has, or `null` for the latest 20. The server replies with every measurement from your projects after it |
+| Client → server | `{ type: 'pong' }` | Answers a `ping` |
+| Server → client | `{ type: 'ready' }` | `auth` worked; send `resume` next |
+| Server → client | `{ type: 'measurements', items: FeedItem[] }` | Catch-up and live measurements from your projects |
+| Server → client | `{ type: 'presence', online: User[] }` | Everyone who shares a project with you and has a socket open, including you |
+| Server → client | `{ type: 'reset' }` | Data was reset; clear your list and send `resume` with `null` |
+| Server → client | `{ type: 'ping' }` | Sent every 20 seconds. A socket that hasn't answered by the next ping is closed |
 
 ## Measurement
 

@@ -2,9 +2,10 @@ import type { Group } from '@kerf/shared';
 import { Router } from 'express';
 
 import type { Db } from '../db';
+import type { Realtime } from '../realtime';
 import { type MeasurementRow, toMeasurement } from '../rows';
 
-export function measurementsRouter(db: Db) {
+export function measurementsRouter(db: Db, realtime: Realtime) {
   const router = Router();
 
   const findProjectForUser = db.prepare(`
@@ -72,6 +73,7 @@ export function measurementsRouter(db: Db) {
       Date.now(),
       req.userId,
     ) as unknown as MeasurementRow;
+    realtime.publishMeasurement(row.id);
     res.status(201).json(toMeasurement(row));
   });
 

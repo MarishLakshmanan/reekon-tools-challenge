@@ -7,6 +7,7 @@ import { layout } from '@/constants/layout';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { api } from '@/lib/api';
+import { getDeviceId } from '@/lib/device';
 import { setSession } from '@/lib/session';
 
 export default function SignInScreen() {
@@ -20,7 +21,7 @@ export default function SignInScreen() {
     setBusy(true);
     setError(undefined);
     try {
-      const { token, user } = await api.login(username.trim(), password);
+      const { token, user } = await api.login(username.trim(), password, await getDeviceId());
       await setSession(token, user);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

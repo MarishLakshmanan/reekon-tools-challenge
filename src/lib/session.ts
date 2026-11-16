@@ -58,7 +58,7 @@ export async function clearSession() {
   await storage.remove().catch(() => {});
 }
 
-function subscribe(listener: () => void) {
+export function subscribeSession(listener: () => void) {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
@@ -67,7 +67,7 @@ function subscribe(listener: () => void) {
 
 export function useSession() {
   return useSyncExternalStore(
-    subscribe,
+    subscribeSession,
     () => session,
     () => session,
   );

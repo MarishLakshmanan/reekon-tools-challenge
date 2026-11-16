@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, SplashScreen, Stack, ThemeProvider } from 'exp
 import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
+import '@/lib/live';
 import { useSession } from '@/lib/session';
 
 SplashScreen.preventAutoHideAsync();
