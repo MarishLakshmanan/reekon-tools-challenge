@@ -6,7 +6,7 @@ opens cleanly in Excel and Google Sheets. The `Measurement` column matches what 
 
 ## Columns
 
-One row per measurement, sorted by project, then group, then time taken:
+One row per measurement, sorted by project, then group (in the order they were created), then time taken:
 
 | Column        | Example                        | Source                                          |
 | ------------- | ------------------------------ | ----------------------------------------------- |
@@ -30,25 +30,26 @@ One row per measurement, sorted by project, then group, then time taken:
 - **The client sends `unit` and `tz`.** The unit is a per-device setting (`src/lib/settings.ts`)
   that the server doesn't know about, and timestamps should be in the user's local time.
 - **Response headers:** `Content-Type: text/csv; charset=utf-8` and
-  `Content-Disposition: attachment; filename="kerf-measurements-YYYY-MM-DD.csv"`.
+  `Content-Disposition: attachment; filename="kerf-measurements-YYYY-MM-DD.csv"`. The client
+  doesn't read this header: it names the file itself, with the date in the device's timezone.
 - **Two value columns.** `Measurement` is the display string, so it matches the app. `Value (mm)`
   is the stored integer, which is exact and works in formulas. A single column can't do both: a
   display string like `3 1/4"` is text, so formulas ignore it, and without the `"` a value like
   `1/4` turns into a date.
 - **Dates as `YYYY-MM-DD HH:mm:ss`.** Excel and Sheets both read this format as a date. They don't
   reliably parse epoch milliseconds or ISO `T…Z` strings.
-- **`toCsv(headers, rows)` in `packages/shared`.** It's a pure function with no DB or HTTP code, and
-  it's unit-tested with vitest. The endpoint builds the rows, including calling `formatValue`, and
+- **`toCsv(headers, rows)` in `packages/shared`.** It's a pure function with no DB or HTTP code, so
+  it can be tested on its own, but this task shipped without automated tests. The endpoint builds the rows, including calling `formatValue`, and
   passes them to `toCsv()`. It writes CSV this way:
-  - **UTF-8 BOM** (`\uFEFF`) at the start. Without it, Excel on Windows reads the file as
-    Windows-1252 and garbles non-ASCII text.
+  - **UTF-8 BOM** (`\uFEFF`) at the start. Without it, Excel on Windows reads the file in
+    a legacy code page (usually Windows-1252) and garbles non-ASCII text.
   - **RFC 4180 quoting.** Any field containing `,`, `"`, CR or LF goes in double quotes, with each
     inner `"` doubled. Line endings are `\r\n`.
   - **Formula-injection guard.** A text field that starts with `=`, `+`, `-`, `@`, tab or CR gets a
     leading `'`, so a teammate's label like `=HYPERLINK(...)` shows as text instead of running.
     Number fields are never prefixed.
 - **Client delivery depends on the platform.** A plain link can't send the bearer token, so the
-  client always `fetch`es the CSV with the header. `Response.text()` strips the leading BOM, so the
+  client always `fetch`es the CSV with the header. `Response.text()` drops a leading BOM (the fetch spec decodes it away), so the
   client adds it back before saving. Then:
   - **Web:** turns the response into a `Blob` and clicks a temporary `<a download>` link.
   - **iOS and Android:** writes the file to the cache directory and opens the share sheet, from
@@ -66,8 +67,17 @@ One row per measurement, sorted by project, then group, then time taken:
 - **A numeric column in the user's unit:** millimetres are what's stored, so they're exact and the
   same for everyone. The user's unit appears only in `Measurement`.
 - **Locale handling:** in locales where Excel's list separator is `;`, the file may open in one
-  column. This is accepted. The `sep=,` hint line was rejected because it shows as a junk row in
-  Sheets and makes Excel ignore the BOM.
+  column. This is accepted. The `sep=,` hint line was rejected because it shows up as a junk first row
+  in Sheets.
 - **XLSX and TSV:** the task asks for CSV, and an XLSX library is heavy on mobile.
 - **A signed or cookie download URL:** fetching with the existing bearer token works on every
   platform without new auth code.
+
+## Not done (time)
+
+The export is one button that downloads everything in your projects. Next, let the user filter it
+before downloading:
+
+- choose which columns to include
+- only measurements captured by a given person
+- only measurements from chosen projects, or from a specific job

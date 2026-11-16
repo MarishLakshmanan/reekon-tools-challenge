@@ -28,7 +28,7 @@ measurements from their own projects.
   React Native can't see protocol pings. If no message arrives for 45s the client treats the
   connection as dead and reconnects, which catches a laptop waking from sleep.
 - **Reset is broadcast.** `/dev/reset` restarts measurement IDs at 1, so the server sends
-  `{ type: 'reset' }` and clients clear their list and reload.
+  `{ type: 'reset' }` and clients clear their list and ask for the latest again.
 
 ## Avoided
 

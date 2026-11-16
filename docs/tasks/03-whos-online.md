@@ -21,7 +21,8 @@ disappears drops off within about a minute.
 - **Changes are pushed.** When a user goes from 0 to 1 sockets or from 1 to 0, the server sends the
   update to everyone who shares a project with them. On connect, the client gets the current list.
 - **Only people who share a project with you.** The list is filtered through `project_members`, so
-  users with no shared projects aren't shown at all (e.g. Sam in the seed data).
+  nobody else sees a user who shares no projects with them. In the seed data Sam shares none, so
+  others never see him and he only sees himself.
 
 ## Avoided
 
