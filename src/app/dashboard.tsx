@@ -1,16 +1,33 @@
+import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
+import { Button } from '@/components/button';
 import { FeedRow } from '@/components/feed-row';
 import { StatusMessage } from '@/components/status-message';
 import { ThemedText } from '@/components/themed-text';
 import { layout } from '@/constants/layout';
 import { Spacing } from '@/constants/theme';
+import { downloadMeasurementsCsv } from '@/lib/export';
 import { reconnect, useLive } from '@/lib/live';
 import { useSettings } from '@/lib/settings';
 
 export default function DashboardScreen() {
   const { unit } = useSettings();
   const { status, feed, online } = useLive();
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string>();
+
+  async function exportCsv() {
+    setExporting(true);
+    setExportError(undefined);
+    try {
+      await downloadMeasurementsCsv(unit);
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <FlatList
@@ -31,6 +48,18 @@ export default function DashboardScreen() {
               Reconnecting…
             </ThemedText>
           )}
+          <View style={styles.export}>
+            <Button
+              title={exporting ? 'Exporting…' : 'Export CSV'}
+              disabled={exporting}
+              onPress={exportCsv}
+            />
+          </View>
+          {exportError && (
+            <ThemedText type="small" themeColor="danger">
+              {exportError}
+            </ThemedText>
+          )}
           <ThemedText type="smallBold" style={styles.feedTitle}>
             Recent measurements
           </ThemedText>
@@ -44,6 +73,9 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   header: {
     marginBottom: Spacing.two,
+  },
+  export: {
+    marginTop: Spacing.three,
   },
   feedTitle: {
     marginTop: Spacing.three,

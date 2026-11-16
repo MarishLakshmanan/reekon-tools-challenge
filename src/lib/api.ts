@@ -1,4 +1,4 @@
-import type { Group, Measurement, NewMeasurement, Project, User } from '@kerf/shared';
+import type { Group, Measurement, NewMeasurement, Project, Unit, User } from '@kerf/shared';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
@@ -31,7 +31,8 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+/** Sends an authenticated request and returns the response, throwing `ApiError` if it isn't ok. */
+async function send(path: string, init: RequestInit = {}): Promise<Response> {
   const token = getToken();
   const res = await fetch(apiUrl() + path, {
     ...init,
@@ -47,7 +48,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const body = await res.json().catch(() => ({}));
     throw new ApiError(res.status, body.error ?? res.statusText);
   }
-  return res.json();
+  return res;
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  return (await send(path, init)).json();
 }
 
 export const api = {
@@ -64,5 +69,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(measurement),
     }),
+  /** The CSV text of every measurement in the user's projects. `Response.text()` drops the BOM. */
+  exportCsv: async (unit: Unit, timeZone: string) =>
+    (await send(`/export.csv?${new URLSearchParams({ unit, tz: timeZone })}`)).text(),
   reset: () => request<{ ok: true }>('/dev/reset', { method: 'POST' }),
 };

@@ -26,6 +26,7 @@ Every error has the same shape: `{ "error": "message" }`.
 | GET    | `/projects/:id/measurements` | Lists a project's groups and measurements              |
 | POST   | `/groups/:id/measurements`   | Adds a measurement to a group                          |
 | GET    | `/feed`                      | Returns the 20 latest measurements                     |
+| GET    | `/export.csv`                | Downloads all your measurements as a CSV               |
 | POST   | `/dev/reset`                 | Resets the database to the seed data                   |
 
 ## Inputs and outputs
@@ -62,6 +63,8 @@ It returns the new `Measurement` with status `201`. It returns `400` if `value` 
 
 **GET `/feed`** returns a list of measurements, newest first. Each one also has `projectId`, `projectName` and `groupName`.
 
+**GET `/export.csv?unit=<unit>&tz=<timezone>`** returns every measurement in your projects as a CSV file. `unit` is `fractional`, `decimal` or `metric` and sets the `Measurement` column. `tz` is an IANA timezone such as `Europe/London` and sets `Taken at`. It returns `400` if either is missing or invalid. The columns are `Project`, `Group`, `Label`, `Measurement`, `Value (mm)`, `Taken by` and `Taken at`. The file starts with a UTF-8 BOM so Excel reads it correctly.
+
 **POST `/dev/reset`** restores the seed projects and measurements, keeps users and sessions, and returns `{ ok: true }`.
 
 ## WebSocket
@@ -70,16 +73,16 @@ It returns the new `Measurement` with status `201`. It returns `400` if `value` 
 The first message must be `auth`, within 5 seconds, or the server closes the socket. A bad token
 closes it with code `4401`.
 
-| Direction | Message | What it does |
-| --------- | ------- | ------------ |
-| Client → server | `{ type: 'auth', token }` | Signs in with a session token |
-| Client → server | `{ type: 'resume', after }` | Subscribes to live measurements. `after` is the highest measurement `id` the client has, or `null` for the latest 20. The server replies with every measurement from your projects after it |
-| Client → server | `{ type: 'pong' }` | Answers a `ping` |
-| Server → client | `{ type: 'ready' }` | `auth` worked; send `resume` next |
-| Server → client | `{ type: 'measurements', items: FeedItem[] }` | Catch-up and live measurements from your projects |
-| Server → client | `{ type: 'presence', online: User[] }` | Everyone who shares a project with you and has a socket open, including you |
-| Server → client | `{ type: 'reset' }` | Data was reset; clear your list and send `resume` with `null` |
-| Server → client | `{ type: 'ping' }` | Sent every 20 seconds. A socket that hasn't answered by the next ping is closed |
+| Direction       | Message                                       | What it does                                                                                                                                                                                |
+| --------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Client → server | `{ type: 'auth', token }`                     | Signs in with a session token                                                                                                                                                               |
+| Client → server | `{ type: 'resume', after }`                   | Subscribes to live measurements. `after` is the highest measurement `id` the client has, or `null` for the latest 20. The server replies with every measurement from your projects after it |
+| Client → server | `{ type: 'pong' }`                            | Answers a `ping`                                                                                                                                                                            |
+| Server → client | `{ type: 'ready' }`                           | `auth` worked; send `resume` next                                                                                                                                                           |
+| Server → client | `{ type: 'measurements', items: FeedItem[] }` | Catch-up and live measurements from your projects                                                                                                                                           |
+| Server → client | `{ type: 'presence', online: User[] }`        | Everyone who shares a project with you and has a socket open, including you                                                                                                                 |
+| Server → client | `{ type: 'reset' }`                           | Data was reset; clear your list and send `resume` with `null`                                                                                                                               |
+| Server → client | `{ type: 'ping' }`                            | Sent every 20 seconds. A socket that hasn't answered by the next ping is closed                                                                                                             |
 
 ## Measurement
 

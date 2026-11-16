@@ -2,6 +2,7 @@ import express from 'express';
 
 import { loginRouter, logout, requireUser } from './auth';
 import { type Db, resetDb } from './db';
+import { exportRouter } from './routes/export';
 import { feedRouter } from './routes/feed';
 import type { Realtime } from './realtime';
 import { measurementsRouter } from './routes/measurements';
@@ -48,6 +49,7 @@ export function createApp(db: Db, realtime: Realtime) {
   app.use(projectsRouter(db));
   app.use(measurementsRouter(db, realtime));
   app.use(feedRouter(db));
+  app.use(exportRouter(db));
 
   return app;
 }
