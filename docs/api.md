@@ -63,7 +63,7 @@ It returns the new `Measurement` with status `201`. It returns `400` if `value` 
 
 **GET `/feed`** returns a list of measurements, newest first. Each one also has `projectId`, `projectName` and `groupName`.
 
-**GET `/export.csv?unit=<unit>&tz=<timezone>`** returns every measurement in your projects as a CSV file. `unit` is `fractional`, `decimal` or `metric` and sets the `Measurement` column. `tz` is an IANA timezone such as `Europe/London` and sets `Taken at`. It returns `400` if either is missing or invalid. The columns are `Project`, `Group`, `Label`, `Measurement`, `Value (mm)`, `Taken by` and `Taken at`. The file starts with a UTF-8 BOM so Excel reads it correctly.
+**GET `/export.csv?unit=<unit>&tz=<timezone>`** returns every measurement in your projects as a CSV file. `unit` is `fractional`, `decimal` or `metric` and sets the `Measurement` column. `tz` is an IANA timezone such as `Europe/London` and sets `Taken at`. It returns `400` if either is missing or invalid. The columns are `Project`, `Group`, `Label`, `Measurement`, `Value (mm)`, `Taken by`, `Device` and `Taken at`. The file starts with a UTF-8 BOM so Excel reads it correctly.
 
 **POST `/dev/reset`** restores the seed projects and measurements, keeps users and sessions, and returns `{ ok: true }`.
 

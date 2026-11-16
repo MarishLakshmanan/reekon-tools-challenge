@@ -3,7 +3,16 @@ import { Router } from 'express';
 
 import type { Db } from '../db';
 
-const HEADERS = ['Project', 'Group', 'Label', 'Measurement', 'Value (mm)', 'Taken by', 'Taken at'];
+const HEADERS = [
+  'Project',
+  'Group',
+  'Label',
+  'Measurement',
+  'Value (mm)',
+  'Taken by',
+  'Device',
+  'Taken at',
+];
 
 type ExportRow = {
   project_name: string;
@@ -11,6 +20,7 @@ type ExportRow = {
   label: string;
   value: number;
   user_name: string;
+  device_id: string;
   created_at: number;
 };
 
@@ -49,7 +59,7 @@ export function exportRouter(db: Db) {
 
   const listForUser = db.prepare(`
     SELECT p.name AS project_name, g.name AS group_name, m.label, m.value,
-           u.name AS user_name, m.created_at
+           u.name AS user_name, m.device_id, m.created_at
     FROM measurements m
     JOIN measurement_groups g ON g.id = m.group_id
     JOIN projects p ON p.id = g.project_id
@@ -78,6 +88,7 @@ export function exportRouter(db: Db) {
       formatValue(r.value, unit),
       r.value,
       r.user_name,
+      r.device_id,
       formatTimestamp(formatter, r.created_at),
     ]);
     const today = formatTimestamp(formatter, Date.now()).slice(0, 10);

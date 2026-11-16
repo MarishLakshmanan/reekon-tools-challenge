@@ -1,5 +1,7 @@
 # Kerf
 
+> All the changes made for this challenge, and the decisions behind them, are in [NOTES.md](NOTES.md).
+
 Kerf is a measurement logger for construction crews. Someone on site takes measurements with a
 Bluetooth tape measure, labels them and files them under a project. Back at the office, someone
 else checks the office dashboard to see what's been measured.
@@ -147,15 +149,3 @@ captured it, on which device, and when.
 
 Email a link to your GitHub repository (with your git history) to **josh@reekon.tools**, with the
 screen recording attached.
-
-## Changes
-
-### Sign-in
-
-- Sign in with a username and password (`alex`, `sam`, `priya`). The fixed bearer tokens are gone.
-- Passwords are random, generated when the database is first created, and written to
-  `packages/api/data/credentials.md`. Delete `packages/api/data/kerf.db` to get new ones.
-- **Settings → Reset seed data** now restores only projects and measurements. Users, passwords and
-  sessions are kept.
-- New API routes: `POST /login` and `POST /logout`. See [docs/api.md](docs/api.md).
-- Design notes and rejected options: [docs/tasks/01-sign-in.md](docs/tasks/01-sign-in.md).

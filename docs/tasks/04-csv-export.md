@@ -8,15 +8,16 @@ opens cleanly in Excel and Google Sheets. The `Measurement` column matches what 
 
 One row per measurement, sorted by project, then group, then time taken:
 
-| Column        | Example                        | Source                                      |
-| ------------- | ------------------------------ | ------------------------------------------- |
-| `Project`     | `Hendricks Kitchen Remodel`    | `projects.name`                             |
-| `Group`       | `Base cabinets`                | `measurement_groups.name`                   |
-| `Label`       | `Sink wall run`                | `measurements.label`                        |
-| `Measurement` | `120"` / `120.00"` / `3048 mm` | `formatValue(value, unit)`, same as the app |
-| `Value (mm)`  | `3048`                         | `measurements.value`, unchanged             |
-| `Taken by`    | `Alex`                         | `users.name` via `created_by`               |
-| `Taken at`    | `2026-11-16 14:03:00`          | `created_at` in the requested timezone      |
+| Column        | Example                        | Source                                          |
+| ------------- | ------------------------------ | ----------------------------------------------- |
+| `Project`     | `Hendricks Kitchen Remodel`    | `projects.name`                                 |
+| `Group`       | `Base cabinets`                | `measurement_groups.name`                       |
+| `Label`       | `Sink wall run`                | `measurements.label`                            |
+| `Measurement` | `120"` / `120.00"` / `3048 mm` | `formatValue(value, unit)`, same as the app     |
+| `Value (mm)`  | `3048`                         | `measurements.value`, unchanged                 |
+| `Taken by`    | `Alex`                         | `users.name` via `created_by`                   |
+| `Device`      | `TP-3F2A`                      | `measurements.device_id`, the tape measure's ID |
+| `Taken at`    | `2026-11-16 14:03:00`          | `created_at` in the requested timezone          |
 
 ## Decisions
 
